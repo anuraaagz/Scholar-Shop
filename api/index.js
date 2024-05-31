@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRouter from './routes/authRoute.js';
 import productRouter from './routes/productRoute.js';
+import userRouter from './routes/userRoute.js';
 import cookieParser from 'cookie-parser';
 
 dotenv.config();
@@ -14,7 +15,8 @@ mongoose.connect(process.env.MONGO).then(()=>{
 });
 
 const app = express();
-app.use(cookieParser);
+app.use(cookieParser());
+app.use(express.json());
 
 app.listen(3000,()=>{
     console.log("Server Is Running")
@@ -22,6 +24,7 @@ app.listen(3000,()=>{
 
 app.use('/api/auth/',authRouter);
 app.use('/api/product/',productRouter);
+app.use('/api/user/',userRouter);
 
 app.use((err, req, res, next) => {
     const statusCode =err.statusCode;

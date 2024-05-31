@@ -1,5 +1,5 @@
 import express from 'express'
-import { auth } from '../middleware/verift_token.js';
+import { auth } from '../middleware/verify_token.js';
 import { addProduct, deleteProduct, getAllProduct, getProduct, updateProduct } from '../controllers/productsController.js';
 
 
