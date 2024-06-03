@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 export const signup = async (req, res, next) => {
     const {name, email, password} = req.body;
     const hashedPassword = bcryptjs.hashSync(password, 10);
-
+   //console.log("HELLO 1");
     const newUser = new User({name, email, password: hashedPassword});
 
     try{
@@ -16,7 +16,8 @@ export const signup = async (req, res, next) => {
         res.status(201).json('User created successfully!');
     }
     catch(error)
-    {
+    {   
+      //  console.log("hello 2");
         next(error);
     }
 

@@ -1,34 +1,36 @@
-import { verify } from "jsonwebtoken";
-import dotenv from'dotenv';
-dotenv.config();
+import { errorHandler } from "./errorHandler.js";
+import jwt from "jsonwebtoken";
 
+export const auth = (req, res, next) => {
+  const token = req.cookies.access_token;
 
-export function auth(req , res , next){
+  if (!token) {
+    return next(errorHandler(401, "Unauthorized"));
+  }
 
-    try{
-
-    const token = req.cookies.Token || req.body.token || req.header("Authorization").replace( "Bearer " ,"" ) ;
-
-    if( !token || token === undefined ){
-        return next(errorHandler(401, "Unauthorized"));
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return next(errorHandler(403, "Forbidden"));
     }
-    
-    try{
-        const decode = verify( token , process.env.JWT_SECRET ) ;
-        req.user = decode;  } 
-    
-    catch(error){
-        return res.status(401).json({
-            success : false,
-            message : "Invalid token",  })
-    }
-    
-    next();  }
-    
-    catch(error){
-        return res.status(401).json({
-            success : false,
-            message : "Authentication failed",  })
-    }
-    
-    }
+
+    req.user = user;
+    next();
+  });
+};
+
+/*mport jwt from 'jsonwebtoken';
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ message: "Unauthorized" }); // Unauthorized
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Forbidden" }); // Forbidden
+    req.user = user;
+    next();
+  });
+};
+
+export default authMiddleware;*/

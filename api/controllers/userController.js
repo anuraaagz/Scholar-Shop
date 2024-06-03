@@ -1,11 +1,11 @@
-import { errorHandler } from "../middleware/errorHandler";
-import User from "../models/userModel";
-import Product from "../models/productModel";
+import { errorHandler } from "../middleware/errorHandler.js";
+import User from "../models/userModel.js";
+import Product from "../models/productModel.js";
 
 //get user
 export const getUser = async (req, res, next) => {
   try {
-    const userId = req.params.id;
+    const userId = req.user.id;
     const user = await User.findById(userId);
     if (!user) {
       return next(errorHandler(404, "User not found!"));
@@ -19,13 +19,13 @@ export const getUser = async (req, res, next) => {
 
 // delete User
 export const deleteUser = async (req, res, next) => {
-  if (req.user.id !== req.params.id) {
-    return next(errorHandler(401, "You can delete your own account!"));
-  }
+  // if (req.user.id !== req.params.id) {
+  //   return next(errorHandler(401, "You can delete your own account!"));
+  // }
 
   try {
-    await Product.deleteMany({ userRef: req.params.id });
-    await User.findByIdAndDelete(req.params.id);
+    await Product.deleteMany({ userRef: req.user.id });
+    await User.findByIdAndDelete(req.user.id);
     res.clearCookie("access_token");
     res.status(200).json("User has been deleted!");
   } catch (error) {
@@ -48,7 +48,7 @@ export const getUserProducts = async (req, res, next) => {
 
 export const addToWishlist = async (req, res, next) => {
   const { productId } = req.body; // Assuming productId is sent in the request body
-  const { userId } = req.params; // Assuming userId is extracted from the request parameters
+  const userId = req.user.id; // Assuming userId is extracted from the request parameters
 
   try {
     // Find the user by ID
@@ -75,7 +75,7 @@ export const addToWishlist = async (req, res, next) => {
   }
 };
 
-export const removeFromWishlist = async (req, res) => {
+export const removeFromWishlist = async (req, res,next) => {
   const { productId } = req.body; // Assuming productId is sent in the request body
   const userId = req.user.id; // Assuming userId is extracted from the request parameters
 

@@ -1,6 +1,7 @@
 import User from "../models/userModel.js";
 import Product from "../models/productModel.js";
 import { errorHandler } from "../middleware/errorHandler.js";
+import mongoose from "mongoose";
 
 //Get all products
 export const getAllProduct = async (req, res, next) => {
@@ -8,10 +9,10 @@ export const getAllProduct = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 9;
     const startIndex = parseInt(req.query.startIndex) || 0;
 
-    let tag = req.query.tags;
+    let tags = req.query.tag;
 
-    if (tag === undefined) {
-      tag = { $in: ["books", "sports", "stationary", "others"] };
+    if (tags === undefined) {
+      tags = { $in: ["books", "sports", "stationary", "others"] };
     }
 
     const searchTerm = req.query.searchTerm || "";
@@ -20,9 +21,9 @@ export const getAllProduct = async (req, res, next) => {
 
     const products = await Product.find({
       name: { $regex: searchTerm, $options: "i" },
-      tag,
+      tags,
     })
-      .sort({ [sort]: order })
+      .sort({ [sort]: order, })
       .limit(limit)
       .skip(startIndex);
 
@@ -33,11 +34,11 @@ export const getAllProduct = async (req, res, next) => {
 };
 
 //Get product by id
-export const getProduct = async (req, res) => {
+export const getProduct = async (req, res, next) => {
   try {
-    const { productId } = req.params;
+    const productId = req.params.id;
     const product = await Product.findById(productId);
-
+    console.log(product);
     if (!product) {
       return next(errorHandler(404, "Product not found"));
     }
@@ -49,8 +50,9 @@ export const getProduct = async (req, res) => {
 };
 
 //add product
-export const addProduct = async (req, res) => {
-  const { name, description, price, age, image, tags, userRef } = req.body;
+export const addProduct = async (req, res, next) => {
+  const { name, description, price, age, image, tags } = req.body;
+  const userRef = req.user.id;
 
   try {
     // Validate input
@@ -76,16 +78,21 @@ export const addProduct = async (req, res) => {
       .status(201)
       .json({ message: "Product added successfully", product: newProduct });
   } catch (error) {
-    res
-      next(error)
+    res;
+    next(error);
   }
 };
 
 //delete product
-export const deleteProduct = async (req, res) => {
-  const { productId } = req.params;
+export const deleteProduct = async (req, res, next) => {
+  const productId = req.params.id;
 
   try {
+    // Validate the productId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return next(errorHandler(400, "Invalid Product ID"));
+    }
+
     // Find the product by ID
     const product = await Product.findById(productId);
 
@@ -94,31 +101,44 @@ export const deleteProduct = async (req, res) => {
       return next(errorHandler(404, "Product not found"));
     }
 
+    if (!product.userRef.equals(req.user.id)) {
+      return next(errorHandler(401, "You can only update your own product!"));
+    }
+
     // Delete the product from the database
     await product.remove();
 
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
-    next(error)
+    console.error('Error deleting product:', error);
+    next(error);
   }
 };
 
 //update product
 export const updateProduct = async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
-
-  if (!product) {
-    return next(errorHandler(404, "Product not found!"));
-  }
-
-  if (req.user.id !== product.userRef) {
-    return next(errorHandler(401, "You can only update your own product!"));
-  }
-
   try {
-    const updatedProduct = await findByIdAndUpdate(req.pramas.id, req.body, {
-      new: true,
-    });
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return next(errorHandler(404, "Product not found!"));
+    }
+
+    // Compare ObjectIds using Mongoose's equals method
+    if (!product.userRef.equals(req.user.id)) {
+      return next(errorHandler(401, "You can only update your own product!"));
+    }
+
+    // Update the product
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true, // Ensure validators are run on the update
+      }
+    );
+
     res.status(200).json(updatedProduct);
   } catch (error) {
     next(error);

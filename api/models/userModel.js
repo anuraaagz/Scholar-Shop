@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
-
-const userSchema = new Schema(
+import Product from "./productModel.js";
+const { Schema } = mongoose;
+const userSchema = mongoose.Schema(
     {
       name: {
         type: String,

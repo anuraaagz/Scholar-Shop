@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+const { Schema } = mongoose;
 const validTags = ['books', 'sports', 'stationary', 'others'];
 const productSchema = mongoose.Schema(
   {
